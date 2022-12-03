@@ -1,4 +1,4 @@
-
+# Easy peasy sort-based solution
 function work(filepath::String)
 
     f = open(filepath)
@@ -21,7 +21,7 @@ function work(filepath::String)
 
     close(f)
 
-    sort!(all)
+    sort!(all) 
 
     sum(all[end-2:end])
 end
