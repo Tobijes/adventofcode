@@ -13,6 +13,9 @@ function work(filepath::String)
 
     render() = begin
         pos = cycle % 40
+        if pos == 0
+            println(cycle)
+        end
         if X - 1 <= pos <= X + 1
             # println(("#", cycle, pos,X))  
             print("#")
@@ -20,22 +23,18 @@ function work(filepath::String)
             # println((".", cycle, pos,X))  
             print(".")
         end
-        if cycle % 40 == 0
-            println(cycle)
-        end
+        
     end
     for l in eachline(f)
+        render()
         if l == "noop"
             cycle += 1
-            render()
         else
             (_, num) = split(l, " ")
-            
             cycle += 1
-            render()
 
-            cycle += 1
             render()
+            cycle += 1
 
             X += parse(Int64, num)
         end
@@ -45,7 +44,7 @@ function work(filepath::String)
     0
 end
 
-result = work("10/sample.txt")
-# result = work("10/input.txt")
+# result = work("10/sample.txt")
+result = work("10/input.txt")
 println("Result: ", result)
 # @test result == 13140
