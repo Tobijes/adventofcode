@@ -1,5 +1,12 @@
 using Test
 
+debug = false
+p(s) = begin
+    if debug
+        println(s)
+    end
+end
+
 struct Node
     parent::Any
     children::Array{Any, 1}
@@ -30,7 +37,7 @@ function treelike(s)
             end
         else
             buf *= c
-            # println(buf)
+            # p(buf)
         end
     end
     if buf != ""
@@ -49,9 +56,9 @@ function tolists(node)
 end
 
 function compare(first, second)
-    println((first,second))
+    p(("Compare", first,second))
     if first isa Int64 && second isa Int64
-        println(("Both ints", first, second))
+        p(("Both ints", first, second))
         if first == second
             return nothing
         elseif first > second
@@ -61,67 +68,92 @@ function compare(first, second)
     end
 
     if first isa Vector{} && second isa Vector{}
-        println(("Both lists", first, second))
+        p(("Both lists", first, second))
         len1 = length(first)
         len2 = length(second)
 
         idx = 0
 
-        for i in 1:min(len1, len2)
-            println(i)
+        for i in 1:max(len1, len2)
+            p(i)
 
-            r = compare(first[i], second[i])
-            if r !== nothing && r == true
+            if i > len1
+                p("left side ran out")
                 return true
             end
-            idx = i
+
+            if i > len2
+                p("right side ran out")
+                return false
+            end
+
+            r = compare(first[i], second[i])
+            if r === nothing
+                idx = i
+                continue
+            end
+            
+            if r == true
+                p(("First is smallest", first[i], second[i]))
+                return true
+            else p(("Seconds is smallest", first[i], second[i]))
+                return false
+            end
         end
 
-        if idx < len2
-            # Left side ran out
-            return true
-        end
-        return false
+        return nothing
     end
 
     if first isa Int64
-        println(("First is int", first, second))
+        p(("First is int", first, second))
         return compare([first], second)
     end
     if second isa Int64
-        println(("Second is int", first, second))
+        p(("Second is int", first, second))
         return compare(first, [second])
     end
 
     return true
 end
 
-compare([[1],[2,3,4]], [[1],4])
 
-# function work(filepath::String)
-#     f = open(filepath)
+function work(filepath::String)
+    f = open(filepath)
 
-#     pairs = []
-#     currentPair = []
-#     for l in eachline(f)
+    pairs = []
+    currentPair = []
+    for l in eachline(f)
+        if l == ""
+            continue
+        end
+        
+        push!(currentPair, treelike(l))
 
-#         if length(currentPair) == 2
-#             push!(pairs, currentPair)
-#             currentPair = []
-#         end
+        if length(currentPair) == 2
+            push!(pairs, currentPair)
+            currentPair = []
+        end
+    end
 
-#         push!(currentPair, treelike(l))
-#     end
+    close(f)
+    p(pairs)
+    idxGood::Array{Int64, 1} = []
+    idx = 0
+    for (first, second) in pairs
+        idx += 1
+        p((first, second))
+        if compare(first, second)
+            push!(idxGood, idx)
+        end
+    end
 
-#     close(f)
-
-
-#     println(pairs)
-
-#     0
-# end
-# # treelike("[1,[2,[3,[4,[5,6,7]]]],8,9]")
+    p(idxGood)
+    sum(idxGood)
+end
+# result = compare([[1],[2,3,4]],[[1],4])
+# result = compare([7,7,7,7],[7,7,7])
+# treelike("[1,[2,[3,[4,[5,6,7]]]],8,9]")
 # result = work("13/sample.txt")
-# #result = work("13/input.txt")
-# println("Result: ", result)
+result = work("13/input.txt")
+println("Result: ", result)
 # @test result == 13
