@@ -12,25 +12,19 @@ function points(sensor, beacon)
     d = dx+dy
 
     # Filter sensors, only look at the ones intersecting Y
-    if sy > Y && sy - d > Y
-        println("Sensor is higher")
+    if abs(sy-Y) > d
+        # println("Line does not intersect")
         return []
     end
-    
-    if sy < Y && sy + d < Y
-        println("Sensor is lower")
-        return []
-    end
-
 
     # Y is constant, so key is only x component
     yDiff = abs(Y-sy)
     xD = d - yDiff
 
-    println((sx, xD))
-    collect(sx-xD:sx+xD)
+    # println((sx, xD))
+    # collect(sx-xD:sx+xD)
 
-    [x for x in sx-xD:sx+xD if abs(x-sx) < xD]
+    Set([x for x in sx-xD:sx+xD if abs(x-sx) <= xD])
 
 
     # off = max(dx,dy)
@@ -71,20 +65,22 @@ function work(filepath::String)
         # distance = abs(sensor[1] - nearest[1]) + abs(sensor[2] - nearest[2])
         # (sx,sy) = sensor
         ps = points(sensor, nearest)
-        if length(ps) > 0
-            push!(cannot, ps...)
-        end
-
+        print("Unioning...")
+        union!(cannot, ps)
+        println("Done!")
+        
     end
 
-    beacons = Set(values(sensor2beacon))
+   
+    beacons = Set([v[1] for v in values(sensor2beacon) if v[2] == Y])
     setdiff!(cannot, beacons)
 
     # println((sensors, beacons))
+    # println(sort(collect(cannot)))
     length(cannot)
 end
 result = work("15/sample.txt")
-# Y=2000000
-# result = work("15/input.txt")
+Y=2000000
+result = work("15/input.txt")
 println("Result: ", result)
 @test result == 26
