@@ -4,29 +4,45 @@ Y = 10
 
 dist(a,b) = sum(abs.(a - b))
 
-function points(sx,sy,dx,dy)
-    valid = Set()
+function points(sensor, beacon)
+    # valid = Set()
+    (sx,sy) = sensor
+    # (bx,by) = beacon
+    (dx,dy) = abs.(sensor - beacon)
     d = dx+dy
 
-    # Filter sensors
-    fromY = abs(Y - sy)
+    # Filter sensors, only look at the ones intersecting Y
     if sy > Y && sy - d > Y
-        return valid
+        println("Sensor is higher")
+        return []
     end
-
+    
     if sy < Y && sy + d < Y
-        return valid
+        println("Sensor is lower")
+        return []
     end
 
-    off = max(dx,dy)
-    for x in sx-off:sx+off # need to reduce this
-        if dist([sx, sy], [x,Y]) > d
-            # println(d)
-            continue
-        end
-        push!(valid, [x,Y])
-    end
-    valid
+
+    # Y is constant, so key is only x component
+    yDiff = abs(Y-sy)
+    xD = d - yDiff
+
+    println((sx, xD))
+    collect(sx-xD:sx+xD)
+
+    [x for x in sx-xD:sx+xD if abs(x-sx) < xD]
+
+
+    # off = max(dx,dy)
+
+    # for x in sx-off:sx+off # need to reduce this
+    #     if dist([sx, sy], [x,Y]) > d
+    #         # println(d)
+    #         continue
+    #     end
+    #     push!(valid, [x,Y])
+    # end
+    # valid
 end
 
 function work(filepath::String)
@@ -50,11 +66,11 @@ function work(filepath::String)
         nearest = sensor2beacon[sensor]
         # println((sensor, nearest))
         distance = dist(sensor, nearest)
-        (dx,dy) = abs.(sensor - nearest)
+        println((sensor, nearest, distance))
+        
         # distance = abs(sensor[1] - nearest[1]) + abs(sensor[2] - nearest[2])
-        println((sensor, nearest, dx,dy))
-        (sx,sy) = sensor
-        ps = points(sx,sy,dx,dy)
+        # (sx,sy) = sensor
+        ps = points(sensor, nearest)
         if length(ps) > 0
             push!(cannot, ps...)
         end
@@ -68,6 +84,7 @@ function work(filepath::String)
     length(cannot)
 end
 result = work("15/sample.txt")
-result = work("15/input.txt")
+# Y=2000000
+# result = work("15/input.txt")
 println("Result: ", result)
 @test result == 26
