@@ -1,6 +1,8 @@
 using Test
 using DataStructures
 
+DEBUG = true
+
 struct MapRange
     sourceStart::Int
     sourceStop::Int
@@ -21,6 +23,12 @@ end
 
 function validrange(start, stop)
     return stop - start >= 0
+end
+
+function debug(s1)
+    if DEBUG
+        println(s1)
+    end
 end
 
 function work(filepath::String)
@@ -72,7 +80,7 @@ function work(filepath::String)
     while !isempty(queue)
 
         range = dequeue!(queue)
-        println("Dequeued range: ", range)
+        # println("Dequeued range: ", range)
         if range.level > length(maps)
             push!(locations, range.start)
             continue
@@ -83,34 +91,34 @@ function work(filepath::String)
         
         # For each maprange in the current map
         for maprange in maps[range.level]
-
+            # println("Checking range: ", maprange)
             # Part inside 
-            insideStart = max(range.start, maprange.sourceStart)
-            insideStop = min(range.stop, maprange.sourceStop)
+            insideStart = max(start, maprange.sourceStart)
+            insideStop = min(stop, maprange.sourceStop)
             
             if validrange(insideStart, insideStop)
                 newStart = maprange.destinationStart + (insideStart - maprange.sourceStart)
                 newStop = maprange.destinationStart + (insideStop - maprange.sourceStart)
                 newRange = Range(newStart, newStop, range.level + 1)
-                println("Enquing inside:, ", newRange)
+                # println("Enquing inside:, ", newRange)
                 enqueue!(queue, newRange)
             end
 
             # Part before
-            beforeStart = range.start
+            beforeStart = start
             beforeStop = insideStart - 1
 
             if validrange(beforeStart, beforeStop)
                 newRange = Range(beforeStart, beforeStop, range.level + 1)
-                println("Enquing before:, ", newRange)
+                # println("Enquing before:, ", newRange)
                 enqueue!(queue, newRange)
             end
 
             # Part after
-            start = max(range.start, maprange.sourceStop) + 1
+            start = max(start, maprange.sourceStop +1)
             stop = range.stop
 
-            println("After Start Stop ", start, " ", stop)
+            # println("After Start Stop ", start, " ", stop)
             if !validrange(start, stop)
                 break
             end
@@ -118,7 +126,7 @@ function work(filepath::String)
 
         if validrange(start, stop)
             newRange = Range(start, stop, range.level + 1)
-            println("Enquing after:, ", newRange)
+            # println("Enquing after:, ", newRange)
             enqueue!(queue, newRange)
         end
     end
@@ -126,7 +134,9 @@ function work(filepath::String)
     println(locations)
     minimum(locations)
 end
+DEBUG = true
 result = work("05/sample.txt")
-# result = work("05/input.txt")
+DEBUG = false
+result = work("05/input.txt")
 println("Result: ", result)
 # @test result == 35
