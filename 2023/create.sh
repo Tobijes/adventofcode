@@ -21,10 +21,12 @@ inputLine="#result = work(\"$day/input.txt\")"
 printLine="println(\"Result: \", result)"
 
 echo $sampleLine >> $asg1
+echo "DEBUG=false" >> $asg1
 echo $inputLine >> $asg1
 echo $printLine >> $asg1
 
 echo $sampleLine >> $asg2
+echo "DEBUG=false" >> $asg2
 echo $inputLine >> $asg2
 echo $printLine >> $asg2
 
