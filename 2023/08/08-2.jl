@@ -13,7 +13,13 @@ function cleansplit(s::AbstractString, sep::String)
     map(x->strip(x), splitted)
 end
 
-
+function array_lcm(arr)
+    result = arr[1]
+    for i in 2:length(arr)
+        result = lcm(result, arr[i])
+    end
+    return result
+ end
 
 function work(filepath::String)
     f = open(filepath)
@@ -33,28 +39,35 @@ function work(filepath::String)
     debug(instr)
     debug(themap)
 
-
     current = collect(filter(x-> x[end] == 'A', keys(themap) ))
+    current_last = collect(map(x->x[end], current))
     simous = length(current)
     debug(current)
-    steps = 0
-    while any(map(x->x[end], current) .!= 'Z')
-        for dir in instr
-            steps += 1
-            if dir == "L"
-                for i in 1:simous
-                    current[i] = themap[current[i]][1]
-                end
-            else
-                for i in 1:simous
-                    current[i] = themap[current[i]][2]
-                end
+    
+    looplength = []
+    
+    for i in 1:simous  
+        steps = 0
+        run = true
+        while run
+            debug(("Steps", steps))
+            for dir in instr
+                steps += 1
+                idx = dir == "L" ? 1 : 2
+                current[i] = themap[current[i]][idx]
+                current_last[i] = current[i][end]
+                debug((current, current_last))
+                
             end
-            debug(current)
+            if current_last[i] == 'Z'
+                run = false
+            end
         end
+        push!(looplength, steps)
     end
 
-    steps
+    println(("Loop length", looplength))
+    reduce(lcm, looplength) 
 end
 result = work("08/sample2.txt")
 DEBUG=false
