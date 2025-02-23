@@ -46,7 +46,7 @@ def move_back_cursor(cursor, data):
     for i in reversed(range(cursor)):
         if data[i] != ".":
             return i
-    raise Exception("Front cursor of out bounds")
+    raise Exception("Back cursor of out bounds")
 
 def checksum(s):
     chsum = 0
