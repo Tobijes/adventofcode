@@ -2,7 +2,10 @@
 
 import sys
 
-if len(sys.argv) > 1 and sys.argv[1] == "t":
+is_test = len(sys.argv) > 1 and sys.argv[1] == "t"
+print("IS TEST:", is_test)
+
+if is_test:
     with open("input.txt") as f:
         data =  f.readlines()
 else:
