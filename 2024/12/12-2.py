@@ -35,9 +35,13 @@ def print_imatrix(matrix):
 
 
 # Problem solution
+from collections import namedtuple
 import queue
+import json
+
 field = [[c for c in s.strip()] for s in data]
-print_matrix(field)
+if not is_test:
+    print_matrix(field)
 
 def mget(r,c, matrix):
     if r >= 0 and r < SIZE and c >= 0 and c < SIZE:
@@ -48,105 +52,128 @@ def mget(r,c, matrix):
 region_counter = -1
 region = [[-1 for _ in range(SIZE)] for _ in range(SIZE)]
 region_plants = {}
-
+region_info = {}
 directions = [(-1,0), (0, 1), (1, 0), (0, -1)]
+
+
+def get_neighbors(r,c):
+    return [(r+dr,c+dc) for (dr,dc) in directions if r+dr >= 0 and r+dr < SIZE and c+dc >= 0 and c+dc < SIZE]
+
 for r in range(SIZE):
     for c in range(SIZE):
-        print(r,c)
 
-        # If no region id, observe if neighbors of same plant has region ID
-        if region[r][c] == -1:
-            connected_fields = [mget(r+dr, c+dc, field) for (dr, dc) in directions]
-            connected_regions = [mget(r+dr, c+dc, region) for (dr, dc) in directions]
-            for i in range(len(directions)):
-                if connected_fields[i] == field[r][c]: #same plant
-                    if connected_regions[i] != -1: #other plant already has region id
-                        region[r][c] = connected_regions[i]
-                        break
-        
-        # If not neighbors had id, create ID
-        if region[r][c] == -1:
-            region_counter += 1
-            region[r][c] = region_counter
-            region_plants[region_counter] = field[r][c]
-        
+        if region[r][c] != -1:
+            continue      
 
         # Spread ID with BFS of same plant
         Q = queue.Queue()
         Q.put((r,c))
         visited = set()
+        region_id = None
 
         while not Q.empty():
-            nr, nc = Q.get()
+            cr, cc = Q.get() # Current row and coumns
 
-            if (nr,nc) in visited:
+            if (cr,cc) in visited:
                 continue
-            visited.add((nr,nc))
+            visited.add((cr,cc))
 
-            region[nr][nc] = region[r][c]
-            connected_fields = [mget(nr+dr, nc+dc, field) for (dr, dc) in directions]
-            for i in range(len(directions)):
-                if connected_fields[i] is not None and connected_fields[i] == field[r][c]: #same plant
-                    dr, dc = directions[i]
-                    new_pos = (nr+dr, nc+dc)
-                    if region[new_pos[0]][new_pos[1]] == -1:
-                        Q.put((nr+dr,nc+dc))
+            # If current element already has region defined
+            if region[cr][cc] != -1:
+                region_id = region[cr][cc]
 
+            # Check neighbors if they are same plant
+            for (nr, nc) in get_neighbors(cr, cc):
+                if field[nr][nc] == field[r][c]:
+                    Q.put((nr,nc))
 
-print("Region map:")
-print_imatrix(region)
+        # If no region ID was found, create
+        if region_id is None:
+            region_counter += 1
+            region_id = region_counter
+            region_info[region_id] = {}
+        
+        for (cr,cc) in visited:
+            region[cr][cc] = region_id
 
+        region_info[region_id]["plant"] = field[r][c]
 
-# Compute perimeters
-perimeter = [[0 for _ in range(SIZE)] for _ in range(SIZE)]
+        rows, cols = list(zip(*visited))
+        region_info[region_id]["area"] = len(visited)
+        region_info[region_id]["row_start"] = min(rows)
+        region_info[region_id]["row_end"] = max(rows)
+        region_info[region_id]["col_start"] = min(cols)
+        region_info[region_id]["col_end"] = max(cols)
 
+if not is_test:
+    print("Region map:")
+    print_imatrix(region)
+
+# Compute sides
+Sides = namedtuple("Sides", ["north", "east", "south", "west"])
 
 # N, E, S, W
 directions = [(-1,0), (0, 1), (1, 0), (0, -1)]
+
+def print_Sides_matrix(matrix: list[list[Sides]]):
+    for row in range(len(matrix)):
+        for col in range(len(matrix)):
+            sides = matrix[row][col]
+            print(f"({int(sides.north)}{int(sides.east)}{int(sides.south)}{int(sides.west)})", end=" ")
+        print()
+
+perimeter:list[list[Sides]] = [[None for _ in range(SIZE)] for _ in range(SIZE)]
+
 for r in range(SIZE):
     for c in range(SIZE):
-        cur_region = region[r][c]
 
-        connections = [mget(r+dr, c+dc, region) for (dr, dc) in directions]
+        neighbor_regions = [mget(r+dr, c+dc, region) for (dr, dc) in directions]
+        perimeter[r][c] = Sides(
+            neighbor_regions[0] != region[r][c],
+            neighbor_regions[1] != region[r][c],
+            neighbor_regions[2] != region[r][c],
+            neighbor_regions[3] != region[r][c]
+        )
 
-        others = [region for region in connections if region != cur_region]
-        perimeter[r][c] = len(others)
+if not is_test:
+    print("Perimeter map:")
+    print_Sides_matrix(perimeter)
 
-print("Perimeter map:")
-print_imatrix(perimeter)
+def bool_true_groups(lst: list[bool]):
+    active = False
+    groups = 0
+    for b in lst:
+        if not active and b:
+            groups += 1
+        active = b
+    return groups
+
+for region_id, info in region_info.items():
+
+    region_num_sides = 0
+    # Check horizontals
+    for r in range(info["row_start"], info["row_end"]+1):
+        col_interval = range(info["col_start"],info["col_end"]+1)
+        sides = [perimeter[r][c] if region[r][c] == region_id else Sides(0,0,0,0) for c in col_interval ]
+        region_num_sides += bool_true_groups([s.north for s in sides])
+        region_num_sides += bool_true_groups([s.south for s in sides])
+    # Chek verticals
+    for c in range(info["col_start"], info["col_end"]+1):
+        row_interval = range(info["row_start"], info["row_end"]+1)
+        sides = [perimeter[r][c] if region[r][c] == region_id else Sides(0,0,0,0) for r in row_interval ]
+        region_num_sides += bool_true_groups([s.east for s in sides])
+        region_num_sides += bool_true_groups([s.west for s in sides])
+    
+    region_info[region_id]["sides"] = region_num_sides
+
+if not is_test:
+    print("Region info:")
+    print(json.dumps(region_info, indent=2))
 
 # Compute costs
-region_area = {}
-region_perimeters = {}
-
-for r in range(SIZE):
-    for c in range(SIZE):
-        region_id = region[r][c]
-        
-        plot_area = 1
-        if region_id in region_area:
-            region_area[region_id] += plot_area
-        else:
-            region_area[region_id] = plot_area
-
-        plot_perimeter = perimeter[r][c]
-        if region_id in region_perimeters:
-            region_perimeters[region_id] += plot_perimeter
-        else:
-            region_perimeters[region_id] = plot_perimeter
-
-print("Region plants", region_plants)
-print("Total Areas", region_area)
-print("Total Perimeter", region_perimeters)
-
-
-assert region_area.keys() == region_perimeters.keys()
-
 s = 0
-for region in region_area:
-    s += region_area[region] * region_perimeters[region]
+for id, info in region_info.items():
+    s += info["area"] * info["sides"]
 
 print("Total cost", s)
 
-# for id, plant in region_plants.items():
-#     print(plant, region_area[id], region_perimeters[id], region_area[id] * region_perimeters[id])

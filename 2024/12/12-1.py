@@ -37,7 +37,8 @@ def print_imatrix(matrix):
 # Problem solution
 import queue
 field = [[c for c in s.strip()] for s in data]
-print_matrix(field)
+if not is_test:
+    print_matrix(field)
 
 def mget(r,c, matrix):
     if r >= 0 and r < SIZE and c >= 0 and c < SIZE:
@@ -50,56 +51,54 @@ region = [[-1 for _ in range(SIZE)] for _ in range(SIZE)]
 region_plants = {}
 
 directions = [(-1,0), (0, 1), (1, 0), (0, -1)]
+
+
+def get_neighbors(r,c):
+    return [(r+dr,c+dc) for (dr,dc) in directions if r+dr >= 0 and r+dr < SIZE and c+dc >= 0 and c+dc < SIZE]
+
 for r in range(SIZE):
     for c in range(SIZE):
-        print(r,c)
 
-        # If no region id, observe if neighbors of same plant has region ID
-        if region[r][c] == -1:
-            connected_fields = [mget(r+dr, c+dc, field) for (dr, dc) in directions]
-            connected_regions = [mget(r+dr, c+dc, region) for (dr, dc) in directions]
-            for i in range(len(directions)):
-                if connected_fields[i] == field[r][c]: #same plant
-                    if connected_regions[i] != -1: #other plant already has region id
-                        region[r][c] = connected_regions[i]
-                        break
-        
-        # If not neighbors had id, create ID
-        if region[r][c] == -1:
-            region_counter += 1
-            region[r][c] = region_counter
-            region_plants[region_counter] = field[r][c]
-        
+        if region[r][c] != -1:
+            continue      
 
         # Spread ID with BFS of same plant
         Q = queue.Queue()
         Q.put((r,c))
         visited = set()
+        region_id = None
 
         while not Q.empty():
-            nr, nc = Q.get()
+            cr, cc = Q.get() # Current row and coumns
 
-            if (nr,nc) in visited:
+            if (cr,cc) in visited:
                 continue
-            visited.add((nr,nc))
+            visited.add((cr,cc))
 
-            region[nr][nc] = region[r][c]
-            connected_fields = [mget(nr+dr, nc+dc, field) for (dr, dc) in directions]
-            for i in range(len(directions)):
-                if connected_fields[i] is not None and connected_fields[i] == field[r][c]: #same plant
-                    dr, dc = directions[i]
-                    new_pos = (nr+dr, nc+dc)
-                    if region[new_pos[0]][new_pos[1]] == -1:
-                        Q.put((nr+dr,nc+dc))
+            # If current element already has region defined
+            if region[cr][cc] != -1:
+                region_id = region[cr][cc]
 
+            # Check neighbors if they are same plant
+            for (nr, nc) in get_neighbors(cr, cc):
+                if field[nr][nc] == field[r][c]:
+                    Q.put((nr,nc))
 
-print("Region map:")
-print_imatrix(region)
+        # If no region ID was found, create
+        if region_id is None:
+            region_counter += 1
+            region_id = region_counter
+            region_plants[region_counter] = field[r][c]
+        
+        for (cr,cc) in visited:
+            region[cr][cc] = region_id
 
+if not is_test:
+    print("Region map:")
+    print_imatrix(region)
 
 # Compute perimeters
 perimeter = [[0 for _ in range(SIZE)] for _ in range(SIZE)]
-
 
 # N, E, S, W
 directions = [(-1,0), (0, 1), (1, 0), (0, -1)]
@@ -112,8 +111,9 @@ for r in range(SIZE):
         others = [region for region in connections if region != cur_region]
         perimeter[r][c] = len(others)
 
-print("Perimeter map:")
-print_imatrix(perimeter)
+if not is_test:
+    print("Perimeter map:")
+    print_imatrix(perimeter)
 
 # Compute costs
 region_area = {}
@@ -135,9 +135,10 @@ for r in range(SIZE):
         else:
             region_perimeters[region_id] = plot_perimeter
 
-print("Region plants", region_plants)
-print("Total Areas", region_area)
-print("Total Perimeter", region_perimeters)
+if not is_test:
+    print("Region plants", region_plants)
+    print("Total Areas", region_area)
+    print("Total Perimeter", region_perimeters)
 
 
 assert region_area.keys() == region_perimeters.keys()
