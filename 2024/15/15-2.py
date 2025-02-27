@@ -92,6 +92,9 @@ print_matrix(field)
 assert cur_row is not None
 assert cur_col is not None           
 
+def move_item(from_r, from_c, to_r, to_c):
+    field[to_r][to_c] = field[from_r][from_c]
+    field[from_r][from_c] = EMPTY
 
 def move(r: int, c: int, direction: str, act: bool):
     dr, dc = directions[direction]
@@ -101,8 +104,7 @@ def move(r: int, c: int, direction: str, act: bool):
 
     if field[r+dr][c+dc] == EMPTY:
         if act:
-            field[r+dr][c+dc] = field[r][c]
-            field[r][c] = EMPTY
+            move_item(r,c,r+dr,c+dc)
         return True
     
     if field[r+dr][c+dc] == ROBOT:
@@ -130,27 +132,17 @@ def move(r: int, c: int, direction: str, act: bool):
         move(*box_right, direction, act=act)
 
         if act:
+            # Move current
+            move_item(r,c,r+dr,c+dc)
 
-            if field[box_left[0]-dr][box_left[1]-dc] == WALL:
-                field[box_left[0]][box_left[1]] = EMPTY
-            else:
-                field[box_left[0]][box_left[1]] = field[box_left[0]-dr][box_left[1]-dc]
-                field[box_left[0]-dr][box_left[1]-dc] = EMPTY
-
-            if field[box_right[0]-dr][box_right[1]-dc] == WALL:
-                field[box_right[0]][box_right[1]] = EMPTY
-            else:
-                field[box_right[0]][box_right[1]] = field[box_right[0]-dr][box_right[1]-dc]
-                field[box_right[0]-dr][box_right[1]-dc] = EMPTY
-
-
-
-            # field[box_right[0]][box_right[1]] = field[box_right[0]-dr][box_right[1]-dc]
-            # field[box_right[0]-dr][box_right[1]-dc] = EMPTY
-            # move_field(box_left[0]-dr, box_left[1]-dc, box_left[0], box_left[1])
-            # move_field(box_right[0]-dr, box_right[1]-dc, box_right[0], box_right[1])
+            # If current is left side of box, move right side aswell
+            if field[r][c] == BOX_LEFT:
+                move_item(r,c+1,r+dr,c+1+dc)
             
-
+            # If current is right side of box, move left side aswell
+            if field[r][c] == BOX_RIGHT:
+                move_item(r,c-1,r+dr,c-1+dc)
+            
         return True
 
     if direction == EAST or direction == WEST:
@@ -158,8 +150,7 @@ def move(r: int, c: int, direction: str, act: bool):
         did_move = move(r+dr, c+dc, direction, act=act)
         if did_move:
             if act:
-                field[r+dr][c+dc] = field[r][c]
-                field[r][c] = EMPTY
+                move_item(r,c,r+dr,c+dc)
             return True
         return False
     
@@ -167,7 +158,8 @@ def move(r: int, c: int, direction: str, act: bool):
 
 print("Initial position", cur_row, cur_col)
 
-for direction in [WEST, SOUTH, WEST, NORTH]:
+# for direction in [WEST, SOUTH, WEST, NORTH, NORTH]:
+for direction in moves:
     dir = directions[direction]
     did_move = move(cur_row, cur_col, direction, act=True)
     if did_move:
@@ -178,10 +170,10 @@ for direction in [WEST, SOUTH, WEST, NORTH]:
         print("Pos", cur_row, cur_col)
         print_matrix(field)
 
-# gps_sum = 0
-# for r in range(SIZE):
-#     for c in range(SIZE):
-#         if field[r][c] == BOX:
-#             gps_sum += 100 * r + c
-
-# print("GPS sum:", gps_sum)
+print_matrix(field)
+gps_sum = 0
+for r in range(ROWS):
+    for c in range(COLUMNS):
+        if field[r][c] == BOX_LEFT:
+            gps_sum += 100 * r + c
+print("GPS sum:", gps_sum)
