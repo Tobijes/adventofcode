@@ -11,13 +11,14 @@ if is_test:
 else:
     with open("sample.txt") as f:
         data =  f.readlines()
-
+        
+data = [l.strip() for l in data]
 SIZE = len(data)
 
 def print_matrix(matrix):
     for row in range(len(matrix)):
         for col in range(len(matrix)):
-            print(matrix[row][col], end="")
+            print(matrix[row][col], end=" ")
         print()
 
 # Problem solution
