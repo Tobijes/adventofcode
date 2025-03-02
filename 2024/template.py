@@ -2,23 +2,27 @@
 
 import sys
 
-is_test = len(sys.argv) > 1 and sys.argv[1] == "t"
-print("IS TEST:", is_test)
-
-if is_test:
-    with open("input.txt") as f:
-        data =  f.readlines()
+is_test = False
+if len(sys.argv) > 1 and sys.argv[1] == "t":
+    is_test = True
+    load_file = "input.txt"
+elif len(sys.argv) > 1:
+    sample_name = sys.argv[1]
+    load_file = "sample_" + sample_name + ".txt"
 else:
-    with open("sample.txt") as f:
-        data =  f.readlines()
+    load_file = "sample.txt"
+
+print(f"{is_test=}", load_file)
+
+with open(load_file) as f:
+    data =  f.readlines()
         
 data = [l.strip() for l in data]
-SIZE = len(data)
 
 def print_matrix(matrix):
     for row in range(len(matrix)):
-        for col in range(len(matrix)):
-            print(matrix[row][col], end=" ")
+        for col in range(len(matrix[0])):
+            print(matrix[row][col], end="")
         print()
 
 # Problem solution
