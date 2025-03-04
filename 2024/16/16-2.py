@@ -29,7 +29,8 @@ def print_matrix(matrix):
 import queue
 from enum import Enum
 field = [list(s) for s in data]
-print_matrix(field)
+if not is_test:
+    print_matrix(field)
 
 SIZE = len(field)
 WALL = "#"
@@ -121,7 +122,6 @@ r_start, c_start = find_first(START)
 r_end, c_end = find_first(END)
 Q.put([(r_start,c_start,Direction.EAST, 0)])
 
-visited = set()
 final_paths = []
 
 while not Q.empty():
@@ -129,15 +129,16 @@ while not Q.empty():
     path = Q.get()
     r,c,dir,cost = path[-1]
 
+    did_move = len(path) >= 2 and dir != path[-2][2]
+
     if field[r][c] == WALL:
         continue
-
-    if (r,c,dir) in visited:
-        if scores[r][c] == cost:
-            final_paths.append(path)
+    
+    if scores[r][c] is not None and did_move and scores[r][c] < cost:
         continue
 
-    visited.add((r,c,dir, cost))
+    if did_move:
+        scores[r][c] = cost
 
     if field[r][c] == END:
         final_paths.append(path)
@@ -149,28 +150,30 @@ while not Q.empty():
 
     # Clockwise
     d = clockwise[dir]
-    Q.put( path[:-1] + [(r, c, d, cost + 1000)])
+    Q.put( path + [(r, c, d, cost + 1000)])
 
     # Counter clockwise
     d = counter_clockwise[dir]
-    Q.put(path[:-1] + [(r, c, d, cost + 1000) ])
+    Q.put(path + [(r, c, d, cost + 1000) ])
 
-print_imatrix(scores)
+if not is_test:
+    print_imatrix(scores)
 
-best_score = scores[r_end][r_start]
+best_score = min(path[-1][-1] for path in final_paths)
 print("Min score", best_score)
-print(len(final_paths))
+print("Final paths", len(final_paths))
 
 spots = set()
 spots_matrix = [["." for _ in range(SIZE)] for _ in range(SIZE)]
 
-best_paths = [path for path in final_paths]# if path[-1][-1] == best_score]
+best_paths = [path for path in final_paths if path[-1][-1] == best_score]
+print("Best paths", len(best_paths))
 for path in best_paths:
-    print(path)
-    print(len(path), path[-1][-1])
     for r,c,dir,cost in path:
         spots.add((r,c))
         spots_matrix[r][c] = "O"
 
-print(len(spots))
-print_matrix(spots_matrix)
+if not is_test:
+    print_matrix(spots_matrix)
+
+print("Spots", len(spots))
