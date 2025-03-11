@@ -1,97 +1,51 @@
-# Load data
+import queue
 
-import sys
+def run(A, B, C):
+    B = A % 8
 
-is_test = False
-if len(sys.argv) > 1 and sys.argv[1] == "t":
-    is_test = True
-    load_file = "input.txt"
-elif len(sys.argv) > 1:
-    sample_name = sys.argv[1]
-    load_file = "sample_" + sample_name + ".txt"
-else:
-    load_file = "sample.txt"
+    B = B ^ 0b11
 
-print(f"{is_test=}", load_file)
+    C = A >> B
 
-with open(load_file) as f:
-    data =  f.readlines()
+    A = A >> 3
+
+    B = B ^ 0b101
+
+    B = B ^ C
+
+    out = B % 8
+    return out
+
+programme = list(reversed([2,4,1,3,7,5,0,3,1,5,4,4,5,5,3,0]))
+# programme = [0,3,5,5,4,4,5,1,3,0,5,7,3,1,4,2]
+
+Bitstring = int
+Program = list[int]
+candidates: queue.Queue[tuple[Bitstring, Program]] = queue.Queue()
+solutions: list[Bitstring] = []
+
+candidates.put((0, programme))
+
+while not candidates.empty():
+    bits, program = candidates.get()
+    O = program[0]
+
+    for A in range(0b1000):
+        newfull = bits << 3 | A
+        out = run(newfull,0,0)
         
-data = [l.strip() for l in data]
+        print(f"{O=}/{O:b}, {A=}/{A:b} -> {newfull=}/{newfull:b} = {out=}/{out:b}")
 
-def print_matrix(matrix):
-    for row in range(len(matrix)):
-        for col in range(len(matrix[0])):
-            print(matrix[row][col], end="")
-        print()
+        if out == O:
+            print(f"Pick {A=}/{A:b}")
+           
+            if len(program) == 1:
+                solutions.append(newfull)
+            else:
+                candidates.put((newfull, program[1:]))
 
-# Problem solution
-A = int(data[0].split(" ")[-1])
-B = int(data[1].split(" ")[-1])
-C = int(data[2].split(" ")[-1])
+for solution in solutions:
+    print(f"{solution=}/{solution:b}")
 
-program = [int(opcode) for opcode in data[-1].split(" ")[-1].split(",")]
-
-inst_ptr = 0
-
-def combo(operand):
-    if operand >= 0 and operand <= 3:
-        return operand
-    if operand == 4:
-        return A
-    if operand == 5:
-        return B
-    if operand == 6:
-        return C
-    
-print(A,B,C,program)
-
-out = []
-PLEN = len(program)
-
-while inst_ptr < PLEN:
-
-    opcode = program[inst_ptr]
-
-    if opcode == 3: #jnz
-        if A == 0:
-            print(f"{inst_ptr=} {opcode=} no jump {A=} {B=} {C=}")
-            inst_ptr += 1
-        else: 
-            operand = program[inst_ptr+1]
-            print(f"{inst_ptr=} {opcode=} {operand=} {A=} {B=} {C=}")
-            inst_ptr = operand
-        continue
-    
-    if inst_ptr+1 >= PLEN:
-        break
-    operand = program[inst_ptr+1]
-    print(f"{inst_ptr=} {opcode=} {operand=} {A=} {B=} {C=}")
-
-    if opcode == 0: #adv
-        numerator = A
-        denominator = 2**combo(operand)
-        A = int(numerator / denominator)
-    elif opcode == 1: #bxl
-        B = B ^ operand
-    elif opcode == 2: #bst
-        B = (combo(operand) % 8) & 0b111
-    # Skip opcode 3 (top)
-    elif opcode == 4: #bxc
-        B = B ^ C
-    elif opcode == 5: #out
-        out.append(combo(operand) % 8)
-    elif opcode == 6: #bdv
-        numerator = A
-        denominator = 2**combo(operand)
-        B = int(numerator / denominator)
-    elif opcode == 7: #cdv
-        numerator = A
-        denominator = 2**combo(operand)
-        C = int(numerator / denominator)
-    else:
-        raise Exception("Unknown opcode")
-    inst_ptr += 2
-
-print("Output:")
-print(",".join(map(str,out)))
+min_solution = min(solutions)
+print(f"{min_solution=}/{min_solution:b}")

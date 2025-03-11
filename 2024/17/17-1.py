@@ -43,7 +43,13 @@ def combo(operand):
         return B
     if operand == 6:
         return C
-    
+
+def p(inst_ptr, opcode, A,B,C, operand = None):
+    if operand is None:
+        print(f"InstPtr: {inst_ptr:{' '}>2} {opcode=} no jump A: {A:b} B: {B:b} C: {C:b}")
+    else:
+        print(f"InstPtr: {inst_ptr:{' '}>2} {opcode=} {operand=} A: {A:b} B: {B:b} C: {C:b}")
+
 print(A,B,C,program)
 
 out = []
@@ -55,18 +61,18 @@ while inst_ptr < PLEN:
 
     if opcode == 3: #jnz
         if A == 0:
-            print(f"{inst_ptr=} {opcode=} no jump {A=} {B=} {C=}")
+            p(inst_ptr, opcode, A, B, C)
             inst_ptr += 1
         else: 
             operand = program[inst_ptr+1]
-            print(f"{inst_ptr=} {opcode=} {operand=} {A=} {B=} {C=}")
+            p(inst_ptr, opcode, A, B, C, operand)
             inst_ptr = operand
         continue
     
     if inst_ptr+1 >= PLEN:
         break
     operand = program[inst_ptr+1]
-    print(f"{inst_ptr=} {opcode=} {operand=} {A=} {B=} {C=}")
+    p(inst_ptr, opcode, A, B, C, operand)
 
     if opcode == 0: #adv
         numerator = A
