@@ -1,5 +1,4 @@
-# Load data
-
+from collections import deque
 import sys
 
 is_test = False
@@ -26,3 +25,28 @@ def print_matrix(matrix):
         print()
 
 # Problem solution
+tree: dict[str, list[str]] = {}
+for d in data:
+    source, outputs = d.split(":")
+    outputs = outputs.strip().split(" ")
+    print(source, outputs)
+    tree[source] = outputs
+
+print(tree)
+q = deque()
+q.append(["you"])
+
+paths = []
+
+while len(q) > 0:
+    e = q.popleft()
+    last = e[-1]
+    for output in tree[last]:
+        nextpath = e + [output]
+        if output == "out":
+            paths.append(nextpath)
+        else:
+            q.append(nextpath)
+
+score = len(paths)
+print(f"{score=}")
