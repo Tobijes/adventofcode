@@ -3,6 +3,7 @@
 import sys
 from dataclasses import dataclass
 
+
 is_test = False
 if len(sys.argv) > 1 and sys.argv[1] == "t":
     is_test = True
@@ -27,47 +28,20 @@ def print_matrix(matrix):
         print()
 
 # Problem solution
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Point():
     x: int
     y: int
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class LineSegment():
     a: Point
     b: Point
-
-data = [Point(*list(map(int,l.split(",")))) for l in data]
-
-line_segments = []
-for i in range(len(data)):
-    if i < len(data) - 1:
-        line_segments.append(LineSegment(data[i], data[i+1]))
-    else:
-        line_segments.append(LineSegment(data[i], data[0]))
-
-if not is_test:
-    print(data)
-    print(line_segments)
 
 def area(p1: Point, p2: Point):
     width = abs(p1.x-p2.x) + 1 
     height = abs(p1.y-p2.y) + 1
     return width * height
-
-# Wiki: https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
-def cross(l1: LineSegment, l2: LineSegment):
-    x1, x2, x3, x4 = l1.a.x, l1.b.x, l2.a.x, l2.b.x
-    y1, y2, y3, y4 = l1.a.y, l1.b.y, l2.a.y, l2.b.y
-    if len(set([l1.a, l1.b, l2.a, l2.b])) < 4:
-        return False
-    try:
-        t = ( (x1-x3) * (y3-y4) - (y1-y3) * (x3-x4) ) / ( (x1-x2) * (y3-y4) - (y1-y2) * (x3-x4) )
-        u = -( (x1-x2) * (y1-y3) - (y1-y2) * (x1-x3) ) / ( (x1-x2) * (y3-y4) - (y1-y2) * (x3-x4) )
-    except ZeroDivisionError:
-        return False
-    # print( t,u)
-    return 0 <= t and t <= 1 and 0 <= u and u <= 1
 
 def points_between(p1: Point, p2: Point):
     if p1.x == p2.x:
@@ -83,68 +57,139 @@ def points_between(p1: Point, p2: Point):
     else:
         raise Exception("Not horz/vert")
 
-def rect_between(p1: Point, p2: Point):
-    return [
-        LineSegment(p1, Point(p2.x, p1.y)),
-        LineSegment(p1, Point(p1.x, p2.y)),
-        LineSegment(p2, Point(p1.x, p2.y)),
-        LineSegment(p2, Point(p2.x, p1.y)),
-    ]
 
-def draw(objs: list, size):
-    image = [['.' for _ in range(size)] for _ in range(size)]
-    for o in objs:
-        if isinstance(o, Point):
-            image[o.y][o.x] = '#'
-        elif isinstance(o, LineSegment):
-            for p in points_between(o.a, o.b):
-                image[p.y][p.x] = 'X'
-            image[o.a.y][o.a.x] = '#'
-            image[o.b.y][o.b.x] = '#'
+canvas_points = []
+
+def canvas_reset():
+    canvas_points.clear()
+
+def canvas_point(p: Point, c = '#'):
+    canvas_points.append((p.x, p.y, c))
+
+def canvas_line(l: LineSegment, lc = 'X', ec = '#'):
+    for p in points_between(l.a, l.b):
+        canvas_points.append((p.x, p.y, lc))
+    canvas_points.append((l.a.x, l.a.y, ec))
+    canvas_points.append((l.b.x, l.b.y, ec))
+
+def canvas_draw():
+    maxx = max([d[0] for d in canvas_points])
+    maxy = max([d[1] for d in canvas_points])
+
+    image = [['.' for _ in range(maxx+2)] for _ in range(maxy+2)]
+
+    for x, y, c in canvas_points:
+        image[y][x] = c
     print_matrix(image)
 
-# draw(line_segments, 15)
-test_lines = [
-    LineSegment(Point(1,1), Point(1,5)),
-    LineSegment(Point(1,1), Point(5,1))
-]
+def canvas_draw_scaled(width):
+    maxx = max([d[0] for d in canvas_points])
+    maxy = max([d[1] for d in canvas_points])
 
-test_lines = rect_between(Point(1,2), Point(7,8))
-test_lines += [LineSegment(Point(4,8), Point(5,8)),]
+    scale = width / maxx
 
-draw(test_lines, 10)
+    image = [['.' for _ in range(width+1)] for _ in range(round(maxy*scale)+2)]
 
-for line in test_lines[:-1]:
+    for x, y, c in canvas_points:
+        x_scaled = round(x * scale)
+        y_scaled = round(y * scale)
+        image[y_scaled][x_scaled] = c
+    print_matrix(image)
 
-    print(line, cross(line, test_lines[-1]))
+data = [[int(x) for x in d.split(",")]  for d in data]
+data = [Point(d[0], d[1]) for d in data]
 
-# if not is_test:
-#     draw(line_segments, 15)
-# maxarea = 0
-# maxpoints = (0,0)
-# for i in range(len(data)):
-#     print(f"{i=}/{len(data)} {maxarea=}")
-#     for j in range(i+1, len(data)):
-#         p1 = data[i]
-#         p2 = data[j]
-        
-#         has_cross = False
-#         for rect_line in rect_between(p1, p2):
-#             if has_cross:
-#                 break
+line_segments: list[LineSegment] = []
+for i in range(len(data)):
+    if i < len(data) - 1:
+        line_segments.append(LineSegment(data[i], data[i+1]))
+    else:
+        line_segments.append(LineSegment(data[i], data[0]))
 
-#             for line in line_segments:
-#                 if cross(rect_line, line):
-#                     has_cross = True
-#                     break
+def clamp_point(p: Point, minx: int, maxx: int, miny: int, maxy: int):
+    return Point(min(max(minx, p.x), maxx), min(max(miny, p.y), maxy))
+
+def point_on_line(p: Point, l: LineSegment):
+    return min(l.a.x, l.b.x) <= p.x <= max(l.a.x, l.b.x) and min(l.a.y, l.b.y) <= p.y <= max(l.a.y, l.b.y)
+
+def is_rect_valid(p1: Point, p2: Point):
+    minx = min(p1.x, p2.x)
+    maxx = max(p1.x, p2.x)
+    miny = min(p1.y, p2.y)
+    maxy = max(p1.y, p2.y)
+
+    for p in data:
+        if minx < p.x < maxx and miny < p.y < maxy:
+            return False
+
+    # Clamp line segments and check if on it
+    has_3 = False
+    has_4 = False
+    p3 = Point(p1.x, p2.y) 
+    p4 = Point(p2.x, p1.y)
+
+    # print(minx,maxx,miny,maxy)
+    # print(p3, p4)
 
 
-#         if has_cross:
-#             continue
+    # canvas_reset()
 
-#         a = area(p1, p2) 
-#         if a > maxarea:
-#             maxarea = a
-#             maxpoints = (i,j)
+    for l in line_segments:
+        a_clamped = clamp_point(l.a, minx, maxx, miny, maxy)
+        b_clamped = clamp_point(l.b, minx, maxx, miny, maxy)
 
-# print(maxarea, data[maxpoints[0]],data[maxpoints[1]])
+        line_clamped = LineSegment(a_clamped, b_clamped)
+
+        if a_clamped.x != b_clamped.x and miny < a_clamped.y < maxy and miny < b_clamped.y < maxy:
+            return False
+
+        # canvas_line(line_clamped)
+        has_3 |= point_on_line(p3, line_clamped)
+        has_4 |= point_on_line(p4, line_clamped)
+        # print("3", has_3, p3, line_clamped)
+        # print("4", has_4, p4, line_clamped)
+        if has_3 and has_4:
+            return True
+
+
+    # canvas_point(p1, 'O')
+    # canvas_point(p2, 'O')
+    # canvas_point(p3, 'Ø')
+    # canvas_point(p4, 'Ø')
+
+    # canvas_draw()
+    # print(f"{has_3} {has_4}")
+
+    return has_3 and has_4
+
+canvas_reset()
+for line in line_segments:
+    canvas_line(line)
+
+
+# print(data)
+maxarea = 0
+maxpoints = (None,None)
+for i in range(len(data)):
+    print(f"{i=}/{len(data)} {maxarea=}")
+    for j in range(i+1, len(data)):
+        p1 = data[i]
+        p2 = data[j]
+
+        a = area(p1, p2) 
+        if a < maxarea:
+            continue
+
+        if not is_rect_valid(p1, p2):
+            continue
+
+        maxarea = a
+        maxpoints = (p1,p2)
+
+print(maxarea, maxpoints[0], maxpoints[1])
+
+# print(is_rect_valid(Point(2,3), Point(9,5)))
+# print(point_on_line(Point(2,5), LineSegment(Point(2,5), Point(5,5))))
+canvas_point(maxpoints[0], "O")
+canvas_point(maxpoints[1], "O")
+canvas_draw_scaled(150)
